@@ -32,8 +32,6 @@ import okhttp3.Response;
 
 public class ChooseAreaFragment extends Fragment {
 
-    private static final String TAG = "ChooseAreaFragment";
-
     public static final int LEVEL_PROVINCE = 0;
 
     public static final int LEVEL_CITY = 1;
@@ -142,20 +140,20 @@ public class ChooseAreaFragment extends Fragment {
      * 查询全国所有的省，优先从数据库查询，如果没有查询到再去服务器上查询。
      */
     private void queryProvinces() {
-        titleText.setText("中国");
-        backButton.setVisibility(View.GONE);
-        provinceList = DataSupport.findAll(Province.class);  //数据库中查询数据
-        if (provinceList.size() > 0) {
-            dataList.clear();
+        titleText.setText("中国");  //设置标题，初始化为中国
+        backButton.setVisibility(View.GONE);  //设置返回按钮隐藏
+        provinceList = DataSupport.findAll(Province.class);  //数据库中查询省份数据
+        if (provinceList.size() > 0) {  //数据库中有缓存数据
+            dataList.clear();  //清除集合数据
             for (Province province : provinceList) {
-                dataList.add(province.getProvinceName());
+                dataList.add(province.getProvinceName());  //将数据增加到集合中
             }
-            adapter.notifyDataSetChanged();
-            listView.setSelection(0);
-            currentLevel = LEVEL_PROVINCE;
-        } else {
+            adapter.notifyDataSetChanged();  //动态刷新listView
+            listView.setSelection(0);  //设置listView显示条目位置
+            currentLevel = LEVEL_PROVINCE;  //设置当前选中级别
+        } else {  //数据库中没有缓存数据
             String address = "http://guolin.tech/api/china";
-            queryFromServer(address, "province");
+            queryFromServer(address, "province");  //根据传入的地址和类型从服务器上查询省市县数据。
         }
     }
 
@@ -164,21 +162,21 @@ public class ChooseAreaFragment extends Fragment {
      * 查询选中省内所有的市，优先从数据库查询，如果没有查询到再去服务器上查询。
      */
     private void queryCities() {
-        titleText.setText(selectedProvince.getProvinceName());
-        backButton.setVisibility(View.VISIBLE);
-        cityList = DataSupport.where("provinceid = ?", String.valueOf(selectedProvince.getId())).find(City.class);
-        if (cityList.size() > 0) {
-            dataList.clear();
+        titleText.setText(selectedProvince.getProvinceName());  //设置标题为被选中省份名称
+        backButton.setVisibility(View.VISIBLE);  //设置返回按钮显示
+        cityList = DataSupport.where("provinceid = ?", String.valueOf(selectedProvince.getId())).find(City.class);  //根据被选中省份id在数据库中查询城市数据
+        if (cityList.size() > 0) {  //数据库中有缓存数据
+            dataList.clear();  //清除集合数据
             for (City city : cityList) {
-                dataList.add(city.getCityName());
+                dataList.add(city.getCityName());  //将数据增加到集合中
             }
-            adapter.notifyDataSetChanged();
-            listView.setSelection(0);
-            currentLevel = LEVEL_CITY;
-        } else {
+            adapter.notifyDataSetChanged();  //动态刷新listView
+            listView.setSelection(0);  //设置listView显示条目位置
+            currentLevel = LEVEL_CITY;  //设置当前选中级别
+        } else {  //数据库中没有缓存数据
             int provinceCode = selectedProvince.getProvinceCode();
             String address = "http://guolin.tech/api/china/" + provinceCode;
-            queryFromServer(address, "city");
+            queryFromServer(address, "city");  //根据传入的地址和类型从服务器上查询省市县数据。
         }
     }
 
@@ -209,26 +207,26 @@ public class ChooseAreaFragment extends Fragment {
      * 根据传入的地址和类型从服务器上查询省市县数据。
      */
     private void queryFromServer(String address, final String type) {
-        showProgressDialog();
-        HttpUtil.sendOkHttpRequest(address, new Callback() {
+        showProgressDialog();  //显示进度条对话框
+        HttpUtil.sendOkHttpRequest(address, new Callback() {  //请求网络，获取响应数据
             @Override
             public void onResponse(Call call, Response response) throws IOException {
-                String responseText = response.body().string();  //JSON数据
+                String responseText = response.body().string();  //将请求网络获取的JSON数据转化为字符串
                 boolean result = false;
                 if ("province".equals(type)) {
-                    result = Utility.handleProvinceResponse(responseText);
+                    result = Utility.handleProvinceResponse(responseText);  //解析和处理服务器返回的省级JSON数据,并将数据增加到数据库
                 } else if ("city".equals(type)) {
-                    result = Utility.handleCityResponse(responseText, selectedProvince.getId());
+                    result = Utility.handleCityResponse(responseText, selectedProvince.getId());  //解析和处理服务器返回的市级JSON数据,并将数据增加到数据库
                 } else if ("county".equals(type)) {
-                    result = Utility.handleCountyResponse(responseText, selectedCity.getId());
+                    result = Utility.handleCountyResponse(responseText, selectedCity.getId());  //解析和处理服务器返回的县级JSON数据,并将数据增加到数据库
                 }
-                if (result) {
+                if (result) {  //解析成功
                     getActivity().runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            closeProgressDialog();
+                            closeProgressDialog();  //关闭进度条对话框
                             if ("province".equals(type)) {
-                                queryProvinces();
+                                queryProvinces();  //查询全国所有的省，优先从数据库查询，如果没有查询到再去服务器上查询。
                             } else if ("city".equals(type)) {
                                 queryCities();
                             } else if ("county".equals(type)) {
